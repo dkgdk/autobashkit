@@ -40,7 +40,7 @@ echo "Testing configuration..."
 echo "This is a test mail from $(hostname)" | mail -s "Mailutils Test via msmtp" "$SMTP_USER"
 
 echo
-echo "✅ Mailutils + msmtp setup complete!"
+echo "Mailutils + msmtp setup complete!"
 echo "Test email sent to: $SMTP_USER"
 echo
 echo "You can now send mail using:"
