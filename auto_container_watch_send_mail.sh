@@ -41,7 +41,7 @@ setup_configuration() {
     echo "🔍 Available services:"
     kubectl get svc -A
     echo
-    echo "👉 Enter Kubernetes port-forward rules (space separated):"
+    echo "Enter Kubernetes port-forward rules (space separated):"
     echo "Format: <namespace> <service-name> <port-mapping> ..."
     echo
     read -p "Enter Kubernetes forwarding configuration (or leave empty): " -a K8S_CONFIG
@@ -57,8 +57,8 @@ setup_configuration() {
     chmod 600 "$CONFIG_FILE"
 
     for EMAIL in $ALERT_EMAILS; do
-        echo "✅ Container & Kubernetes Watch setup complete on host: $(hostname)" | \
-        mail -s "✅ Watch Setup Complete" "$EMAIL"
+        echo "Container & Kubernetes Watch setup complete on host: $(hostname)" | \
+        mail -s " Watch Setup Complete" "$EMAIL"
     done
 
     log_msg "INFO" "Configuration saved to $CONFIG_FILE"
@@ -93,9 +93,9 @@ if command -v docker &>/dev/null; then
         [[ -z "$ACTUAL_NAME" ]] && ACTUAL_NAME="$CONTAINER"
 
         if ! docker ps -a --format '{{.Names}}' | grep -w "$ACTUAL_NAME" &>/dev/null; then
-            MSG="❌ Container '$ACTUAL_NAME' not found."
+            MSG="Container '$ACTUAL_NAME' not found."
             log_msg "ERROR" "$MSG"
-            send_mail "❌ Missing Container" "$MSG"
+            send_mail "Missing Container" "$MSG"
             echo "$ACTUAL_NAME:missing" >> "$TMP_STATE"
             continue
         fi
@@ -104,14 +104,14 @@ if command -v docker &>/dev/null; then
         PREV_STATE="${LAST_STATE[$ACTUAL_NAME]}"
 
         if [[ "$CURRENT_STATE" != "$PREV_STATE" ]]; then
-            MSG="⚙️ Container '$ACTUAL_NAME' state changed: $PREV_STATE ➜ $CURRENT_STATE"
+            MSG="Container '$ACTUAL_NAME' state changed: $PREV_STATE ➜ $CURRENT_STATE"
             log_msg "INFO" "$MSG"
-            send_mail "⚙️ Container State Changed" "$MSG"
+            send_mail "Container State Changed" "$MSG"
 
             if [[ "$CURRENT_STATE" =~ (exited|dead|stopped) ]]; then
                 if [[ "$ACTUAL_NAME" == "minikube" ]]; then
                     log_msg "WARN" "Minikube stopped. Restarting via minikube start --force"
-                    send_mail "⚠️ Minikube Restarting" "Minikube stopped on $(hostname). Restarting..."
+                    send_mail "Minikube Restarting" "Minikube stopped on $(hostname). Restarting..."
                     sudo rm -rf /tmp/juju-* >/dev/null 2>&1
                     minikube start --force >> "$LOGFILE" 2>&1
                 else
@@ -119,12 +119,12 @@ if command -v docker &>/dev/null; then
                     docker start "$ACTUAL_NAME" >> "$LOGFILE" 2>&1
                     sleep 5
                     if docker ps --format '{{.Names}}' | grep -w "$ACTUAL_NAME" &>/dev/null; then
-                        log_msg "OK" "✅ Container '$ACTUAL_NAME' restarted successfully"
-                        send_mail "✅ Container Restarted" "Container '$ACTUAL_NAME' restarted successfully on $(hostname)."
+                        log_msg "OK" "Container '$ACTUAL_NAME' restarted successfully"
+                        send_mail "Container Restarted" "Container '$ACTUAL_NAME' restarted successfully on $(hostname)."
                         CURRENT_STATE="running"
                     else
-                        log_msg "FAIL" "❌ Failed to restart container '$ACTUAL_NAME'"
-                        send_mail "❌ Container Restart Failed" "Failed to restart container '$ACTUAL_NAME' on $(hostname)."
+                        log_msg "FAIL" "Failed to restart container '$ACTUAL_NAME'"
+                        send_mail "Container Restart Failed" "Failed to restart container '$ACTUAL_NAME' on $(hostname)."
                         CURRENT_STATE="failed"
                     fi
                 fi
@@ -135,7 +135,7 @@ if command -v docker &>/dev/null; then
     done
     mv "$TMP_STATE" "$STATE_FILE"
 else
-    send_mail "⚠️ Docker Missing" "Docker not found on $(hostname)"
+    send_mail "Docker Missing" "Docker not found on $(hostname)"
 fi
 
 # -------------------------------------------------------------------
@@ -170,23 +170,23 @@ if (( COUNT % 3 == 0 && COUNT > 0 )); then
         [[ -z "$PREV_STATE" ]] && PREV_STATE="unknown"
 
         if [[ "$CURRENT_STATE" != "$PREV_STATE" ]]; then
-            log_msg "INFO" "🔄 Port-forward for $SVC ($NS) changed: $PREV_STATE ➜ $CURRENT_STATE"
+            log_msg "INFO" "Port-forward for $SVC ($NS) changed: $PREV_STATE ➜ $CURRENT_STATE"
 
             if [[ "$CURRENT_STATE" == "stopped" ]]; then
                 log_msg "WARN" "Attempting to restart port-forward for $SVC ($NS) $PORTS"
                 nohup kubectl port-forward --address 127.0.0.1 -n "$NS" svc/"$SVC" "$PORTS" >> "$LOGFILE" 2>&1 &
                 sleep 5
                 if pgrep -f "kubectl port-forward.*$SVC.*$PORTS" >/dev/null; then
-                    log_msg "OK" "✅ Port-forward restarted for $SVC ($NS) $PORTS"
-                    send_mail "✅ Port-forward Restarted" "Port-forward for $SVC ($NS) restarted successfully."
+                    log_msg "OK" "Port-forward restarted for $SVC ($NS) $PORTS"
+                    send_mail "Port-forward Restarted" "Port-forward for $SVC ($NS) restarted successfully."
                     CURRENT_STATE="active"
                 else
-                    log_msg "FAIL" "❌ Failed to restart port-forward for $SVC ($NS) $PORTS"
-                    send_mail "❌ Port-forward Restart Failed" "Restart for $SVC ($NS) failed."
+                    log_msg "FAIL" "Failed to restart port-forward for $SVC ($NS) $PORTS"
+                    send_mail "Port-forward Restart Failed" "Restart for $SVC ($NS) failed."
                     CURRENT_STATE="failed"
                 fi
             elif [[ "$PREV_STATE" =~ (stopped|failed) && "$CURRENT_STATE" == "active" ]]; then
-                send_mail "✅ Port-forward Active Again" "Port-forward for $SVC ($NS) $PORTS is active again."
+                send_mail "Port-forward Active Again" "Port-forward for $SVC ($NS) $PORTS is active again."
             fi
         fi
 
@@ -197,4 +197,4 @@ else
     log_msg "WARN" "No valid K8S_CONFIG found or incorrect format."
 fi
 
-log_msg "OK" "✅ Container and port-forward check completed."
+log_msg "OK" "Container and port-forward check completed."
